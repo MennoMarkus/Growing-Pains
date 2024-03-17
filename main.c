@@ -3292,9 +3292,8 @@ audio_xaudio2_ctx* audio_xaudio2_init()
     WAVEFORMATEX wave_format;
     HRESULT result;
 
-    audio_xaudio2_ctx* xaudio2_ctx = new audio_xaudio2_ctx();
-    //audio_xaudio2_ctx* xaudio2_ctx = malloc_type(audio_xaudio2_ctx);
-    //memzero(xaudio2_ctx, sizeof(*xaudio2_ctx));
+    audio_xaudio2_ctx* xaudio2_ctx = malloc_type(audio_xaudio2_ctx);
+    memzero(xaudio2_ctx, sizeof(*xaudio2_ctx));
     xaudio2_ctx->volume = AUDIO_VOLUME_DEFAULT;
 
     result = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
@@ -3331,9 +3330,9 @@ audio_xaudio2_ctx* audio_xaudio2_init()
 
     for (sz_t i = 0; i < AUDIO_CONCURRENT_SOUNDS_MAX; ++i)
     {
-        //audio_xaudio2_voice* voice = &xaudio2_ctx->voices[i];
-        //voice = new(&xaudio2_ctx->voices[i]) audio_xaudio2_voice();
-        audio_xaudio2_voice* voice = new audio_xaudio2_voice();
+        audio_xaudio2_voice* voice = malloc_type(audio_xaudio2_voice);
+        memzero(voice, sizeof(*voice));
+        voice = new(voice) audio_xaudio2_voice();
         xaudio2_ctx->voices[i] = voice;
         
         result = xaudio2_ctx->xaudio2->CreateSourceVoice(
@@ -3360,7 +3359,13 @@ void audio_xaudio2_destory(audio_xaudio2_ctx* io_xaudio2_ctx)
 {
     if (io_xaudio2_ctx->xaudio2 != NULL)
     {
+        for (sz_t i = 0; i < AUDIO_CONCURRENT_SOUNDS_MAX; ++i)
+        {
+            io_xaudio2_ctx->voices[i]->~audio_xaudio2_voice();
+            free(io_xaudio2_ctx->voices[i]);
+        }
         io_xaudio2_ctx->xaudio2->Release();
+        free(io_xaudio2_ctx->xaudio2);
     }
     memzero(io_xaudio2_ctx, sizeof(*io_xaudio2_ctx));
 }
